@@ -14,7 +14,6 @@
     Dialog,
     DialogContent,
     DialogDescription,
-    DialogFooter,
     DialogHeader,
     DialogTitle,
   } from '@/components/ui/dialog';
@@ -42,14 +41,14 @@
     useDayStore,
   } from '@/stores/day';
   import { useAuthStore } from '@/stores/auth';
+  import DownloadDialog from '@/components/DownloadDialog.vue';
+
+  const pendingBlob = ref<Blob | null>(null);
+  const pendingFileName = ref('');
 
   const router = useRouter();
   const dayStore = useDayStore();
   const authStore = useAuthStore();
-
-  // Export
-  const showExportDialog = ref(false);
-  const exportData = ref('');
 
   // Import
   const showImportDialog = ref(false);
@@ -65,7 +64,12 @@
   const isClearing = ref(false);
   const clearError = ref('');
 
-  const handleExport = () => {
+  const downloadFile = async (blob: Blob, filename: string) => {
+    pendingBlob.value = blob;
+    pendingFileName.value = filename;
+  };
+
+  const handleExport = async () => {
     const keys = Object.keys(localStorage);
     const cafeData: Record<string, string> = {};
 
@@ -75,21 +79,12 @@
       }
     });
 
-    exportData.value = JSON.stringify(cafeData, null, 2);
-    showExportDialog.value = true;
-  };
-
-  const downloadExport = () => {
-    const blob = new Blob([exportData.value], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cafeteria-backup-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showExportDialog.value = false;
+    await downloadFile(
+      new Blob([JSON.stringify(cafeData, null, 2)], {
+        type: 'application/json',
+      }),
+      `cafeteria-backup-${new Date().toISOString().split('T')[0]}.json`
+    );
   };
 
   const handleFileSelect = (event: Event) => {
@@ -106,7 +101,7 @@
       return;
     }
 
-    if (confirmText.value !== 'borrar') {
+    if (confirmText.value.toLowerCase().trim() !== 'borrar') {
       importError.value = 'Escribe "borrar" para confirmar';
       return;
     }
@@ -303,33 +298,6 @@
       </TabsContent>
     </Tabs>
 
-    <!-- Export Dialog -->
-    <Dialog v-model:open="showExportDialog">
-      <DialogContent class="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Exportar datos</DialogTitle>
-          <DialogDescription>
-            Vista previa de los datos a exportar. Haz clic en Descargar para
-            guardar el archivo.
-          </DialogDescription>
-        </DialogHeader>
-        <div
-          class="max-h-96 overflow-auto rounded-lg bg-gray-50 p-4 dark:bg-gray-900"
-        >
-          <pre class="text-xs">{{ exportData }}</pre>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="showExportDialog = false">
-            Cancelar
-          </Button>
-          <Button @click="downloadExport">
-            <Download class="mr-2 size-4" />
-            Descargar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
     <!-- Import Dialog -->
     <Dialog v-model:open="showImportDialog">
       <DialogContent class="sm:max-w-md">
@@ -488,5 +456,7 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <DownloadDialog v-model="pendingBlob" :file-name="pendingFileName" />
   </div>
 </template>

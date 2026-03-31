@@ -36,6 +36,7 @@
     TableHeader,
     TableRow,
   } from '@/components/ui/table';
+  import DownloadDialog from '@/components/DownloadDialog.vue';
   import type { IDayId } from '@/types';
   import * as xlsx from 'xlsx';
 
@@ -162,6 +163,9 @@
     await dayStore.deleteDay(dayId);
   };
 
+  const pendingBlob = ref<Blob | null>(null);
+  const pendingFileName = ref('');
+
   // Export to Excel $$$$
   const exportToExcel = () => {
     const book = xlsx.utils.book_new();
@@ -206,7 +210,11 @@
     xlsx.utils.book_append_sheet(book, sheet, 'Tabla Diaria');
 
     // Save file
-    xlsx.writeFile(book, `cafeteria-${dayStore.currentDay.date}.xlsx`);
+    const wbout = xlsx.write(book, { bookType: 'xlsx', type: 'array' });
+    pendingFileName.value = `cafeteria-${dayStore.currentDay.date}.xlsx`;
+    pendingBlob.value = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
   };
 </script>
 
@@ -369,6 +377,8 @@
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <DownloadDialog v-model="pendingBlob" :file-name="pendingFileName" />
 
     <!-- Day table -->
     <div v-if="dayStore.currentDay">
