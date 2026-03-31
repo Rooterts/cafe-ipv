@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
+  import { computed, ref } from 'vue';
   import { useProductStore } from '@/stores/product';
   import { Button } from '@/components/ui/button';
   import { Input } from '@/components/ui/input';
@@ -20,47 +20,63 @@
   import { Plus, Pencil, Trash2, GripVertical } from 'lucide-vue-next';
   import { useDayStore } from '@/stores/day';
   import draggable from 'vuedraggable';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '@/components/ui/select';
+  import type { AcceptableValue } from 'reka-ui';
 
   const productStore = useProductStore();
   const dayStore = useDayStore();
-  const products = ref(dayStore.currentDay.products);
-
-  watch(products, async (products) => {
-    dayStore.currentDay.products = products;
-    await dayStore.saveDay(dayStore.currentDay);
-  });
 
   const showDialog = ref(false);
-  const editingProduct = ref<{ id?: string; name: string; price: number }>({
+  const editingProduct = ref<{
+    id?: string;
+    name: string;
+    price: number;
+    index: number;
+  }>({
     name: '',
     price: 0,
+    index: -1,
   });
 
   const openNew = () => {
-    editingProduct.value = { name: '', price: 0 };
+    editingProduct.value = { name: '', price: 0, index: -1 };
+    editingProduct.value.index = dayStore.currentDay.products.length;
     showDialog.value = true;
   };
 
   const openEdit = (product: { id: string; name: string; price: number }) => {
-    editingProduct.value = { ...product };
+    const index = productStore.currentProducts.findIndex(
+      ({ id }) => id === product.id
+    );
+    editingProduct.value = { ...product, index };
+    editingProduct.value.index = index;
     showDialog.value = true;
   };
 
   const save = async () => {
     if (editingProduct.value.id) {
+      if (!editingProduct.value.name.trim()) throw new Error('Nombre vacío!!');
       await productStore.updateProduct(
         dayStore.currentDayId,
         editingProduct.value.id,
         {
-          name: editingProduct.value.name,
+          name: editingProduct.value.name.trim(),
           price: editingProduct.value.price,
+          index: editingProduct.value.index,
         }
       );
     } else {
       await productStore.addProduct(
         dayStore.currentDayId,
         editingProduct.value.name,
-        editingProduct.value.price
+        editingProduct.value.price,
+        editingProduct.value.index
       );
     }
     showDialog.value = false;
@@ -77,6 +93,25 @@
     if (dayStore.currentDay) {
       dayStore.currentDay.updatedAt = Date.now();
       await dayStore.saveDay(dayStore.currentDay);
+    }
+  };
+
+  const positionOptions = computed(() => {
+    const options = [{ value: 'after--1', label: '<< al principio >>' }];
+    productStore.currentProducts.forEach((product, index) => {
+      if (product.id !== editingProduct.value.id)
+        options.push({
+          value: 'after-' + index,
+          label: `${product.name}${index === productStore.currentProducts.length - 1 ? ' << al final >>' : ''}`,
+        });
+    });
+    return options;
+  });
+
+  const handlePositionChange = (value: AcceptableValue) => {
+    if (typeof value !== 'string') throw new Error('Unknown select value type');
+    if (value.startsWith('after-')) {
+      editingProduct.value.index = parseInt(value.replace('after-', '')) + 1;
     }
   };
 </script>
@@ -170,6 +205,29 @@
           <div class="space-y-2">
             <label class="text-sm font-medium">Precio (CUP)</label>
             <Input v-model="editingProduct.price" type="number" min="0" />
+          </div>
+
+          <div class="flex items-center">
+            <label class="text-sm font-medium">Insertar después de:</label>
+
+            <Select
+              :model-value="'after-' + (editingProduct.index - 1)"
+              @update:model-value="handlePositionChange"
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="<< Error!! >>" />
+              </SelectTrigger>
+
+              <SelectContent>
+                <SelectItem
+                  v-for="(option, index) in positionOptions"
+                  :key="index"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>

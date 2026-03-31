@@ -13,7 +13,12 @@ export const useProductStore = defineStore('products', () => {
 
   const currentProducts = computed(() => dayStore.currentDay?.products ?? []);
 
-  const addProduct = async (dayId: IDayId, name: string, price: number) => {
+  const addProduct = async (
+    dayId: IDayId,
+    name: string,
+    price: number,
+    index = 0
+  ) => {
     const day = await dayStore.getDay(dayId);
 
     const newProduct: IProduct = {
@@ -31,7 +36,7 @@ export const useProductStore = defineStore('products', () => {
       },
     };
 
-    day.products.splice(0, 0, newProduct);
+    day.products.splice(index, 0, newProduct);
     day.updatedAt = Date.now();
     await dayStore.saveDay(day);
   };
@@ -39,11 +44,12 @@ export const useProductStore = defineStore('products', () => {
   const updateProduct = async (
     dayId: IDayId,
     productId: string,
-    updates: Partial<Pick<IProduct, 'name' | 'price'>>
+    updates: Partial<Pick<IProduct, 'name' | 'price'> & { index: number }>
   ) => {
     const day = await dayStore.getDay(dayId);
 
-    const product = day.products.find((p) => p.id === productId);
+    const productIndex = day.products.findIndex((p) => p.id === productId);
+    const product = day.products[productIndex];
     if (!product) return;
 
     if (updates.name) {
@@ -60,6 +66,14 @@ export const useProductStore = defineStore('products', () => {
         );
       product.price = updates.price;
       product.daily.importe = product.daily.vendido * product.price;
+    }
+    if (updates.index !== undefined) {
+      day.products.splice(updates.index, 0, product);
+      day.products.splice(
+        // handle overflow
+        updates.index < productIndex ? productIndex + 1 : productIndex,
+        1
+      );
     }
 
     day.updatedAt = Date.now();
