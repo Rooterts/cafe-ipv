@@ -1,49 +1,29 @@
-export type IProductId = string & { readonly __brand: unique symbol };
+import { z } from 'zod';
+import type {
+  productIdSchema,
+  orderIdSchema,
+  dayIdSchema,
+  productDailyDataSchema,
+  productSchema,
+  orderItemSchema,
+  orderSchema,
+  daySchema,
+} from './schemas';
 
+// Inferred types
 export type IMutableProductDailyField = keyof Pick<
   IProductDailyData,
   'inicio' | 'entrada' | 'salida'
 >;
+export type IProductId = z.infer<typeof productIdSchema>;
+export type IOrderId = z.infer<typeof orderIdSchema>;
+export type IDayId = z.infer<typeof dayIdSchema>;
 
-export interface IProductDailyData {
-  inicio: number;
-  entrada: number;
-  salida: number;
-  total: number;
-  vendido: number;
-  importe: number;
-  final: number;
-}
-
-export interface IProduct {
-  id: IProductId;
-  name: string;
-  price: number;
-  daily: IProductDailyData;
-}
-
-export interface IOrderItem {
-  productId: IProductId;
-  quantity: number;
-}
-
-export type IOrderId = string & { readonly __brand: unique symbol };
-export interface IOrder {
-  id: IOrderId;
-  items: IOrderItem[];
-  createdAt: number;
-  updatedAt: number;
-}
-
-export type IDayId = string & { readonly __brand: unique symbol };
-export interface IDay {
-  id: IDayId;
-  date: string;
-  products: IProduct[];
-  orders: IOrder[];
-  createdAt: number;
-  updatedAt: number;
-}
+export type IProductDailyData = z.infer<typeof productDailyDataSchema>;
+export type IProduct = z.infer<typeof productSchema>;
+export type IOrderItem = z.infer<typeof orderItemSchema>;
+export type IOrder = z.infer<typeof orderSchema>;
+export type IDay = z.infer<typeof daySchema>;
 
 export interface ICartItem {
   productId: IProductId;
