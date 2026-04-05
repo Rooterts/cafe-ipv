@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { IDay, IDayId } from '@/types';
+import { DAY_EXPORT_KEY, exportedDaySchema } from '@/types/schemas';
 
 export const STORAGE_PREFIX = 'v3:cafeteria-';
 export const DAY_PREFIX = STORAGE_PREFIX + 'day-';
@@ -37,6 +38,36 @@ export const useDayStore = defineStore('days', () => {
     const key = DAY_PREFIX + dayId;
     const stored = localStorage.getItem(key);
     return stored ? (JSON.parse(stored) as IDay) : null;
+  };
+
+  const exportDayData = async (dayId: IDayId) => {
+    const key = DAY_PREFIX + dayId;
+    const stored = localStorage.getItem(key);
+
+    if (!stored) return null;
+
+    return JSON.stringify(
+      {
+        createdAt: Date.now(),
+        exportId: DAY_EXPORT_KEY,
+        export: JSON.parse(stored),
+      },
+      null,
+      2
+    );
+  };
+
+  const importDayData = async (
+    data: string | Record<string, unknown>,
+    dayId?: IDayId
+  ) => {
+    const { export: parsed } = exportedDaySchema.parse(
+      typeof data === 'string' ? JSON.parse(data) : data
+    );
+
+    if (dayId) parsed.id = dayId;
+
+    await saveDay(parsed);
   };
 
   const saveDay = async (day: IDay) => {
@@ -192,6 +223,9 @@ export const useDayStore = defineStore('days', () => {
 
     updateDayDate,
     deleteDay,
+
+    importDayData,
+    exportDayData,
 
     loadDay,
     saveDay,

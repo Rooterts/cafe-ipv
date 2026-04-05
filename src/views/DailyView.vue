@@ -17,6 +17,8 @@
     Trash2,
     Calculator,
     FileSpreadsheet,
+    Download,
+    Upload,
   } from 'lucide-vue-next';
   import { useTableStore } from '@/stores/table';
   import {
@@ -216,6 +218,58 @@
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
   };
+
+  // Export day as JSON
+  const exportDay = async () => {
+    if (!dayStore.currentDay) return;
+    const json = (await dayStore.exportDayData(dayStore.currentDay.id))!;
+    pendingFileName.value = `cafeteria-day-${dayStore.currentDay.date}.json`;
+    pendingBlob.value = new Blob([json], { type: 'application/json' });
+  };
+
+  // Import day
+  const fileInputRef = ref<HTMLInputElement | null>(null);
+  const importDialogOpen = ref(false);
+  const importedDay = ref<string | null>(null);
+  const importError = ref('');
+
+  const triggerFileInput = () => {
+    fileInputRef.value?.click();
+  };
+
+  const handleFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      importedDay.value = e.target?.result as string;
+      importDialogOpen.value = true;
+      importError.value = '';
+    };
+    reader.onerror = () => {
+      importError.value = 'Error al leer el archivo';
+      setTimeout(() => (importError.value = ''), 3000);
+    };
+    reader.readAsText(file!);
+    input.value = '';
+  };
+
+  const confirmImport = async () => {
+    if (!importedDay.value || !dayStore.currentDay) return;
+    try {
+      await dayStore.importDayData(importedDay.value, dayStore.currentDayId);
+
+      // Re-sync totals based on orders
+      await tableStore.syncWithOrders(dayStore.currentDayId);
+      importDialogOpen.value = false;
+      importedDay.value = null;
+    } catch (err) {
+      importError.value =
+        err instanceof Error ? err.message : 'Error al importar';
+      setTimeout(() => (importError.value = ''), 3000);
+    }
+  };
 </script>
 
 <template>
@@ -378,14 +432,25 @@
       </DialogContent>
     </Dialog>
 
-    <DownloadDialog v-model="pendingBlob" :file-name="pendingFileName" />
-
     <!-- Day table -->
     <div v-if="dayStore.currentDay">
       <DayTable :day="dayStore.currentDay" @update="tableStore.updateField" />
 
-      <!-- Export -->
-      <div class="mt-4 flex justify-end">
+      <!-- Export/Import buttons -->
+      <div class="mt-4 flex justify-end gap-2">
+        <Button @click="exportDay" size="sm" variant="outline" class="gap-2">
+          <Download class="size-4" />
+          Exportar día
+        </Button>
+        <Button
+          @click="triggerFileInput"
+          size="sm"
+          variant="outline"
+          class="gap-2"
+        >
+          <Upload class="size-4" />
+          Importar día
+        </Button>
         <Button
           @click="exportToExcel"
           size="sm"
@@ -402,5 +467,38 @@
     >
       No hay días disponibles. Crea uno nuevo.
     </div>
+
+    <!-- Hidden file input for import -->
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept=".json,application/json"
+      class="hidden"
+      @change="handleFileChange"
+    />
+
+    <!-- Import confirmation dialog -->
+    <Dialog v-model:open="importDialogOpen">
+      <DialogContent class="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Importar día</DialogTitle>
+          <DialogDescription>
+            Se reemplazará el día actual ({{ dayStore.currentDay?.date }}) con
+            los datos del archivo. Esta acción no se puede deshacer.
+          </DialogDescription>
+        </DialogHeader>
+        <p v-if="importError" class="text-destructive text-sm">
+          {{ importError }}
+        </p>
+        <DialogFooter>
+          <Button variant="outline" @click="importDialogOpen = false">
+            Cancelar
+          </Button>
+          <Button @click="confirmImport"> Reemplazar día actual </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <DownloadDialog v-model="pendingBlob" :file-name="pendingFileName" />
   </div>
 </template>
