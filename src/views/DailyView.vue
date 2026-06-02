@@ -19,6 +19,7 @@
     FileSpreadsheet,
     Download,
     Upload,
+    Search,
   } from 'lucide-vue-next';
   import { useTableStore } from '@/stores/table';
   import {
@@ -52,6 +53,17 @@
     }, 0);
   });
 
+  // Product search
+  const searchQuery = ref('');
+  const filteredProducts = computed(() => {
+    if (!dayStore.currentDay) return [];
+    if (!searchQuery.value.trim()) return dayStore.currentDay.products;
+    const q = searchQuery.value.toLowerCase();
+    return dayStore.currentDay.products.filter((p) =>
+      p.name.toLowerCase().includes(q)
+    );
+  });
+
   // Dialog state for new day
   const showDateDialog = ref(false);
   const selectedDate = ref(new Date().toISOString().split('T')[0]);
@@ -61,6 +73,8 @@
   const selectDedDay = ref(dayStore.currentDayId);
   watch(selectDedDay, async (newId) => {
     if (newId) await dayStore.setCurrentDay(newId);
+    // Reset search when day changes
+    searchQuery.value = '';
   });
 
   const daysOptions = computed(() => {
@@ -325,6 +339,19 @@
       </CardContent>
     </Card>
 
+    <!-- Search bar -->
+    <div class="relative">
+      <Search
+        class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+      />
+      <Input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Buscar producto..."
+        class="pl-9"
+      />
+    </div>
+
     <!-- Create day dialog -->
     <Dialog v-model:open="showDateDialog">
       <DialogContent class="sm:max-w-md">
@@ -433,39 +460,60 @@
     </Dialog>
 
     <!-- Day table -->
-    <div v-if="dayStore.currentDay">
-      <DayTable :day="dayStore.currentDay" @update="tableStore.updateField" />
-
-      <!-- Export/Import buttons -->
-      <div class="mt-4 flex justify-end gap-2">
-        <Button @click="exportDay" size="sm" variant="outline" class="gap-2">
-          <Download class="size-4" />
-          Exportar día
-        </Button>
-        <Button
-          @click="triggerFileInput"
-          size="sm"
-          variant="outline"
-          class="gap-2"
-        >
-          <Upload class="size-4" />
-          Importar día
-        </Button>
-        <Button
-          @click="exportToExcel"
-          size="sm"
-          class="gap-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
-        >
-          <FileSpreadsheet class="size-4" />
-          Exportar a Excel
-        </Button>
+    <div v-if="dayStore.currentDay && filteredProducts.length">
+      <DayTable
+        :day="{ ...dayStore.currentDay, products: filteredProducts }"
+        @update="tableStore.updateField"
+      />
+      <div
+        v-if="
+          searchQuery &&
+          filteredProducts.length !== dayStore.currentDay.products.length
+        "
+        class="text-muted-foreground mt-2 text-sm"
+      >
+        Mostrando {{ filteredProducts.length }} de
+        {{ dayStore.currentDay.products.length }} productos
       </div>
     </div>
     <div
-      v-else
+      v-else-if="
+        dayStore.currentDay && filteredProducts.length === 0 && searchQuery
+      "
       class="text-muted-foreground bg-card rounded-lg border py-12 text-center shadow-sm"
     >
-      No hay días disponibles. Crea uno nuevo.
+      No hay productos que coincidan con "{{ searchQuery }}"
+    </div>
+    <div
+      v-else-if="dayStore.currentDay && filteredProducts.length === 0"
+      class="text-muted-foreground bg-card rounded-lg border py-12 text-center shadow-sm"
+    >
+      No hay productos para este día. Crea productos en la pestaña "Productos".
+    </div>
+
+    <!-- Export/Import buttons -->
+    <div class="mt-4 flex justify-end gap-2">
+      <Button @click="exportDay" size="sm" variant="outline" class="gap-2">
+        <Download class="size-4" />
+        Exportar día
+      </Button>
+      <Button
+        @click="triggerFileInput"
+        size="sm"
+        variant="outline"
+        class="gap-2"
+      >
+        <Upload class="size-4" />
+        Importar día
+      </Button>
+      <Button
+        @click="exportToExcel"
+        size="sm"
+        class="gap-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+      >
+        <FileSpreadsheet class="size-4" />
+        Exportar a Excel
+      </Button>
     </div>
 
     <!-- Hidden file input for import -->

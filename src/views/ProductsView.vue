@@ -17,7 +17,7 @@
     DialogHeader,
     DialogTitle,
   } from '@/components/ui/dialog';
-  import { Plus, Pencil, Trash2, GripVertical } from 'lucide-vue-next';
+  import { Plus, Pencil, Trash2, GripVertical, Search } from 'lucide-vue-next';
   import { useDayStore } from '@/stores/day';
   import draggable from 'vuedraggable';
   import {
@@ -31,6 +31,16 @@
 
   const productStore = useProductStore();
   const dayStore = useDayStore();
+
+  // Search state
+  const searchQuery = ref('');
+  const filteredProducts = computed(() => {
+    if (!searchQuery.value.trim()) return productStore.currentProducts;
+    const q = searchQuery.value.toLowerCase();
+    return productStore.currentProducts.filter((p) =>
+      p.name.toLowerCase().includes(q)
+    );
+  });
 
   const showDialog = ref(false);
   const editingProduct = ref<{
@@ -130,6 +140,19 @@
       </Button>
     </div>
 
+    <!-- Search bar -->
+    <div class="relative">
+      <Search
+        class="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
+      />
+      <Input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Buscar producto..."
+        class="pl-9"
+      />
+    </div>
+
     <div class="overflow-x-auto rounded-lg border shadow-sm select-none">
       <Table>
         <TableHeader>
@@ -140,12 +163,14 @@
             <TableHead class="w-24">Acciones</TableHead>
           </TableRow>
         </TableHeader>
+        <!-- Draggable list only when no search active -->
         <draggable
+          v-if="!searchQuery"
           tag="tbody"
           data-slot="table-body"
           v-model="dayStore.currentDay.products"
           class="divide-y"
-          item-key="sdsad"
+          item-key="id"
           ghostClass="opacity-50"
           dragClass="cursor-grabbing"
           handle=".drag-handle"
@@ -184,7 +209,55 @@
             </TableRow>
           </template>
         </draggable>
+        <!-- Plain filtered table when search is active -->
+        <tbody v-else class="divide-y">
+          <TableRow
+            v-for="product in filteredProducts"
+            :key="product.id"
+            class="hover:bg-muted/30 cursor-default"
+          >
+            <TableCell class="w-10"></TableCell>
+            <TableCell class="font-medium">{{ product.name }}</TableCell>
+            <TableCell class="font-mono">{{ product.price }}</TableCell>
+            <TableCell>
+              <div class="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  @click="openEdit(product)"
+                >
+                  <Pencil class="size-4" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="icon-sm"
+                  @click="confirmDelete(product.id)"
+                >
+                  <Trash2 class="size-4" />
+                </Button>
+              </div>
+            </TableCell>
+          </TableRow>
+          <TableRow v-if="filteredProducts.length === 0">
+            <TableCell
+              colspan="4"
+              class="text-muted-foreground py-8 text-center"
+            >
+              No hay productos que coincidan con "{{ searchQuery }}"
+            </TableCell>
+          </TableRow>
+        </tbody>
       </Table>
+      <div
+        v-if="
+          searchQuery &&
+          filteredProducts.length !== productStore.currentProducts.length
+        "
+        class="text-muted-foreground border-t px-4 py-2 text-sm"
+      >
+        Mostrando {{ filteredProducts.length }} de
+        {{ productStore.currentProducts.length }} productos
+      </div>
     </div>
 
     <Dialog v-model:open="showDialog">
