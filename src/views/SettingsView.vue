@@ -32,7 +32,14 @@
   } from '@/components/ui/tabs';
   import ThemeSelector from '@/components/ThemeSelector.vue';
   import CardManager from '@/components/CardManager.vue';
-  import { Download, Upload, AlertTriangle, Trash2 } from 'lucide-vue-next';
+  import {
+    Download,
+    Upload,
+    AlertTriangle,
+    Trash2,
+    Volume2,
+    VolumeX,
+  } from 'lucide-vue-next';
   import {
     CURRENT_DAY_KEY,
     DAYS_LIST_KEY,
@@ -41,6 +48,7 @@
     useDayStore,
   } from '@/stores/day';
   import { useAuthStore } from '@/stores/auth';
+  import { useSoundStore } from '@/stores/sound';
   import DownloadDialog from '@/components/DownloadDialog.vue';
 
   const pendingBlob = ref<Blob | null>(null);
@@ -49,6 +57,7 @@
   const router = useRouter();
   const dayStore = useDayStore();
   const authStore = useAuthStore();
+  const soundStore = useSoundStore();
 
   // Import
   const showImportDialog = ref(false);
@@ -223,7 +232,7 @@
       </TabsList>
 
       <TabsContent value="data" class="mt-6">
-        <div class="grid gap-6 md:grid-cols-2">
+        <div class="grid gap-6 md:grid-cols-3">
           <!-- Export Card -->
           <Card>
             <CardHeader>
@@ -268,8 +277,38 @@
             </CardContent>
           </Card>
 
-          <!-- Clear Data Card -->
-          <Card class="border-destructive/20 md:col-span-2">
+          <!-- Sound Effects Card -->
+          <Card>
+            <CardHeader>
+              <CardTitle class="flex items-center gap-2">
+                <Volume2 v-if="soundStore.enabled" class="size-5" />
+                <VolumeX v-else class="size-5" />
+                Efectos de sonido
+              </CardTitle>
+              <CardDescription>
+                Activar o desactivar el sonido de la caja registradora al
+                guardar un pedido
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                class="w-full gap-2"
+                @click="soundStore.toggle()"
+              >
+                <Volume2 v-if="soundStore.enabled" class="size-4" />
+                <VolumeX v-else class="size-4" />
+                {{
+                  soundStore.enabled ? 'Sonido activado' : 'Sonido desactivado'
+                }}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <!-- Clear Data Card - full width below -->
+        <div class="mt-6">
+          <Card class="border-destructive/20">
             <CardHeader>
               <CardTitle class="text-destructive flex items-center gap-2">
                 <Trash2 class="size-5" />

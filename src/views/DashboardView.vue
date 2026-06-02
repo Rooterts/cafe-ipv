@@ -5,6 +5,7 @@
   import { useOrderStore } from '@/stores/order';
   import { useTableStore } from '@/stores/table';
   import { useCardStore } from '@/stores/card';
+  import { useSoundStore } from '@/stores/sound';
   import CurrentOrder from '@/components/CurrentOrder.vue';
   import OrderList from '@/components/OrderList.vue';
   import QRSelectorSheet from '@/components/QRSelectorSheet.vue';
@@ -30,12 +31,14 @@
   import type { ICard } from '@/types';
   import QRDialog from '@/components/QRDialog.vue';
   import { useBreakpoints } from '@/composable/useBreakpoints';
+  import cashRegisterSound from '@/assets/cash-register.mp3';
 
   const dayStore = useDayStore();
   const productStore = useProductStore();
   const orderStore = useOrderStore();
   const tableStore = useTableStore();
   const cardStore = useCardStore();
+  const soundStore = useSoundStore();
   const { isMobile } = useBreakpoints();
 
   onMounted(() => {
@@ -159,6 +162,16 @@
     }
 
     await tableStore.syncWithOrders(dayStore.currentDayId);
+
+    if (soundStore.enabled) {
+      try {
+        const audio = new Audio(cashRegisterSound);
+        audio.play().catch((e) => console.warn('Sound play failed:', e));
+      } catch (e) {
+        console.warn('Sound error:', e);
+      }
+    }
+
     clearCurrentOrder();
     showProductSheet.value = false;
   };
