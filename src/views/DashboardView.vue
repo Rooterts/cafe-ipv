@@ -5,7 +5,7 @@
   import { useOrderStore } from '@/stores/order';
   import { useTableStore } from '@/stores/table';
   import { useCardStore } from '@/stores/card';
-  import { useSoundStore } from '@/stores/sound';
+  import { useSoundEffect } from '@/composable/useSoundEffect';
   import CurrentOrder from '@/components/CurrentOrder.vue';
   import OrderList from '@/components/OrderList.vue';
   import QRSelectorSheet from '@/components/QRSelectorSheet.vue';
@@ -31,14 +31,14 @@
   import type { ICard } from '@/types';
   import QRDialog from '@/components/QRDialog.vue';
   import { useBreakpoints } from '@/composable/useBreakpoints';
-  import cashRegisterSound from '@/assets/cash-register.mp3';
 
   const dayStore = useDayStore();
   const productStore = useProductStore();
   const orderStore = useOrderStore();
   const tableStore = useTableStore();
   const cardStore = useCardStore();
-  const soundStore = useSoundStore();
+  const { playAdd, playIncrement, playCashRegister, playDecrement, playTrash } =
+    useSoundEffect();
   const { isMobile } = useBreakpoints();
 
   onMounted(() => {
@@ -92,6 +92,7 @@
     );
     if (existing) {
       existing.quantity++;
+      playAdd();
     } else {
       const product = productStore.currentProducts.find(
         (p) => p.id === productId
@@ -102,6 +103,7 @@
         name: product.name,
         price: product.price,
       });
+      playAdd();
     }
   };
 
@@ -113,8 +115,10 @@
       const item = currentOrderItems.value[index]!;
       if (item.quantity > 1) {
         item.quantity--;
+        playDecrement();
       } else {
         currentOrderItems.value.splice(index, 1);
+        playTrash();
       }
     }
   };
@@ -123,9 +127,11 @@
     currentOrderItems.value = currentOrderItems.value.filter(
       (i) => i.productId !== productId
     );
+    playTrash();
   };
 
   const clearCurrentOrder = () => {
+    playDecrement();
     currentOrderItems.value = [];
     editingOrderId.value = null;
   };
@@ -157,22 +163,15 @@
         editingOrderId.value,
         items
       );
+      playIncrement();
     } else {
       await orderStore.createOrder(dayStore.currentDayId, items);
+      playCashRegister();
     }
 
     await tableStore.syncWithOrders(dayStore.currentDayId);
-
-    if (soundStore.enabled) {
-      try {
-        const audio = new Audio(cashRegisterSound);
-        audio.play().catch((e) => console.warn('Sound play failed:', e));
-      } catch (e) {
-        console.warn('Sound error:', e);
-      }
-    }
-
-    clearCurrentOrder();
+    currentOrderItems.value = [];
+    editingOrderId.value = null;
     showProductSheet.value = false;
   };
 
@@ -180,6 +179,7 @@
     if (!dayStore.currentDayId) return;
     if (!confirm('¿Eliminar este pedido?')) return;
     await orderStore.deleteOrder(dayStore.currentDayId, orderId);
+    playTrash();
     if (editingOrderId.value === orderId) {
       clearCurrentOrder();
     }

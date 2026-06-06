@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import { useRouter } from 'vue-router';
+  import { useSoundEffect } from '@/composable/useSoundEffect';
   import { Button } from '@/components/ui/button';
   import { Input } from '@/components/ui/input';
   import {
@@ -59,6 +60,7 @@
   const dayStore = useDayStore();
   const authStore = useAuthStore();
   const soundStore = useSoundStore();
+  const { playTrash } = useSoundEffect();
 
   // Import
   const showImportDialog = ref(false);
@@ -203,6 +205,7 @@
         }
       }
 
+      playTrash();
       showClearDialog.value = false;
       clearConfirmText.value = '';
 
@@ -287,8 +290,7 @@
                 Efectos de sonido
               </CardTitle>
               <CardDescription>
-                Activar o desactivar el sonido de la caja registradora al
-                guardar un pedido
+                Activar o desactivar los sonidos de la app
               </CardDescription>
             </CardHeader>
             <CardContent>

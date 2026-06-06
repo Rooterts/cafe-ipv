@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { computed, ref, watch } from 'vue';
   import { useDayStore } from '@/stores/day';
+  import { useSoundEffect } from '@/composable/useSoundEffect';
   import { Button } from '@/components/ui/button';
   import {
     Select,
@@ -46,6 +47,7 @@
 
   const dayStore = useDayStore();
   const tableStore = useTableStore();
+  const { playAdd, playTrash } = useSoundEffect();
 
   const dailyTotal = computed(() => {
     if (!dayStore.currentDay) return 0;
@@ -118,6 +120,7 @@
 
     const date = new Date(selectedDate.value!);
     await dayStore.createDay(date, dayStore.currentDayId);
+    playAdd();
     showDateDialog.value = false;
   };
 
@@ -178,6 +181,7 @@
     )
       return;
     await dayStore.deleteDay(dayId);
+    playTrash();
   };
 
   const pendingBlob = ref<Blob | null>(null);

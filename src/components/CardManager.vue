@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue';
   import { useCardStore } from '@/stores/card';
+  import { useSoundEffect } from '@/composable/useSoundEffect';
   import { Button } from '@/components/ui/button';
   import { Input } from '@/components/ui/input';
   import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@
   import QRDialog from './QRDialog.vue';
 
   const cardStore = useCardStore();
+  const { playAdd, playTrash } = useSoundEffect();
 
   const showCardDialog = ref(false);
   const editingCard = ref<ICard | null>(null);
@@ -108,6 +110,7 @@
       await cardStore.updateCard(editingCard.value.id, cardData);
     } else {
       await cardStore.addCard(cardData);
+      playAdd();
     }
     showCardDialog.value = false;
   };
@@ -115,6 +118,7 @@
   const deleteCard = async (id: string) => {
     if (confirm('¿Estás seguro de eliminar esta tarjeta?')) {
       await cardStore.deleteCard(id);
+      playTrash();
     }
   };
 

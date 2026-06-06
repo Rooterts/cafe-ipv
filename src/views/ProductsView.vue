@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue';
   import { useProductStore } from '@/stores/product';
+  import { useSoundEffect } from '@/composable/useSoundEffect';
   import { Button } from '@/components/ui/button';
   import { Input } from '@/components/ui/input';
   import {
@@ -31,6 +32,7 @@
 
   const productStore = useProductStore();
   const dayStore = useDayStore();
+  const { playAdd, playTrash } = useSoundEffect();
 
   // Search state
   const searchQuery = ref('');
@@ -88,6 +90,7 @@
         editingProduct.value.price,
         editingProduct.value.index
       );
+      playAdd();
     }
     showDialog.value = false;
   };
@@ -95,6 +98,7 @@
   const confirmDelete = async (productId: string) => {
     if (confirm('¿Eliminar producto?')) {
       await productStore.deleteProduct(dayStore.currentDayId, productId);
+      playTrash();
     }
   };
 

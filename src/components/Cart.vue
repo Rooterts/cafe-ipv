@@ -1,5 +1,3 @@
-// src/components/Cart.vue
-
 <script setup lang="ts">
   import type { ICartItem } from '@/types';
   import {
