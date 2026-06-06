@@ -1,12 +1,13 @@
 {
   "name": "cafe-ipv-app",
   "private": true,
-  "version": "1.6.9",
+  "version": "1.6.15",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "sync-version": "tsx ./scripts/sync-version.ts",
+    "create-release": "tsx ./scripts/release.ts",
     "android:sync": "tsx ./scripts/sync-android.ts ",
     "android:debug": "cd android && ./gradlew assembleDebug",
     "android:release": "cd android && ./gradlew clean assembleRelease",
