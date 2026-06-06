@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, computed, onMounted } from 'vue';
+  import { ref, computed, onMounted, watchEffect } from 'vue';
   import { useDayStore } from '@/stores/day';
   import { useProductStore } from '@/stores/product';
   import { useOrderStore } from '@/stores/order';
@@ -11,7 +11,23 @@
   import QRSelectorSheet from '@/components/QRSelectorSheet.vue';
   import { Button } from '@/components/ui/button';
   import { Input } from '@/components/ui/input';
-  import { Eye, Plus, Minus, CreditCard, List } from 'lucide-vue-next';
+  import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+  } from '@/components/ui/select';
+  import {
+    Eye,
+    Plus,
+    Minus,
+    CreditCard,
+    List,
+    Filter,
+    X,
+    Trash2,
+  } from 'lucide-vue-next';
   import {
     Sheet,
     SheetContent,
@@ -185,6 +201,73 @@
     }
     await tableStore.syncWithOrders(dayStore.currentDayId);
   };
+
+  // ---------- Order Filter ----------
+  interface FilterCondition {
+    productId: IProductId;
+    operator: '>' | '<' | '>=' | '<=' | '==';
+    quantity: number;
+  }
+
+  const filterConditions = ref<FilterCondition[]>([]);
+
+  const addFilterCondition = () => {
+    const products = productStore.currentProducts;
+    if (products.length === 0) return;
+    const randomIndex = Math.floor(Math.random() * products.length);
+    const randomProduct = products[randomIndex]!;
+    filterConditions.value.push({
+      productId: randomProduct.id,
+      operator: '>=',
+      quantity: 1,
+    });
+  };
+
+  const removeFilterCondition = (index: number) => {
+    filterConditions.value.splice(index, 1);
+  };
+
+  const clearFilters = () => {
+    filterConditions.value = [];
+  };
+
+  const filteredOrders = computed(() => {
+    const orders = orderStore.currentOrders;
+    if (filterConditions.value.length === 0) return orders;
+    return orders.filter((order) => {
+      return filterConditions.value.every((condition) => {
+        const matchingItem = order.items.find(
+          (item) => item.productId === condition.productId
+        );
+        if (!matchingItem) return false;
+        const qty = matchingItem.quantity;
+        switch (condition.operator) {
+          case '>':
+            return qty > condition.quantity;
+          case '<':
+            return qty < condition.quantity;
+          case '>=':
+            return qty >= condition.quantity;
+          case '<=':
+            return qty <= condition.quantity;
+          case '==':
+            return qty === condition.quantity;
+          default:
+            return false;
+        }
+      });
+    });
+  });
+
+  // Clean up invalid product ids (if a product was deleted)
+  watchEffect(() => {
+    const validProductIds = new Set(
+      productStore.currentProducts.map((p) => p.id)
+    );
+    filterConditions.value = filterConditions.value.filter((cond) =>
+      validProductIds.has(cond.productId)
+    );
+  });
 </script>
 
 <template>
@@ -417,7 +500,7 @@
       </SheetContent>
     </Sheet>
 
-    <!-- Orders Sheet -->
+    <!-- Orders Sheet with Advanced Filter -->
     <Sheet v-model:open="showOrdersSheet">
       <SheetContent
         :side="isMobile ? 'bottom' : 'right'"
@@ -429,9 +512,121 @@
             {{ orderStore.currentOrders.length }} pedidos registrados
           </SheetDescription>
         </SheetHeader>
+
         <div class="overflow-y-auto p-4">
+          <div class="border-b p-4">
+            <div class="mb-3 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <Filter class="size-4" />
+                <span class="text-sm font-medium">Filtros avanzados</span>
+                <span
+                  v-if="filterConditions.length"
+                  class="text-muted-foreground text-xs"
+                >
+                  ({{ filteredOrders.length }} de
+                  {{ orderStore.currentOrders.length }} pedidos)
+                </span>
+              </div>
+              <Button
+                v-if="filterConditions.length"
+                variant="ghost"
+                size="sm"
+                @click="clearFilters"
+                class="h-7 gap-1 text-xs"
+              >
+                <Trash2 class="size-3" />
+                Limpiar
+              </Button>
+            </div>
+
+            <div class="space-y-3">
+              <div
+                v-for="(condition, idx) in filterConditions"
+                :key="idx"
+                class="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-end"
+              >
+                <div class="flex-1">
+                  <label class="text-muted-foreground mb-1 block text-xs"
+                    >Producto</label
+                  >
+                  <Select v-model="condition.productId">
+                    <SelectTrigger class="w-full">
+                      <SelectValue placeholder="Seleccionar producto" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem
+                        v-for="product in productStore.currentProducts"
+                        :key="product.id"
+                        :value="product.id"
+                      >
+                        {{ product.name }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="w-28">
+                  <label class="text-muted-foreground mb-1 block text-xs"
+                    >Operador</label
+                  >
+                  <Select v-model="condition.operator">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value=">">&gt;</SelectItem>
+                      <SelectItem value="<">&lt;</SelectItem>
+                      <SelectItem value=">=">&gt;=</SelectItem>
+                      <SelectItem value="<=">&lt;=</SelectItem>
+                      <SelectItem value="==">==</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div class="w-28">
+                  <label class="text-muted-foreground mb-1 block text-xs"
+                    >Cantidad</label
+                  >
+                  <Input
+                    type="number"
+                    v-model.number="condition.quantity"
+                    min="0"
+                    step="1"
+                    class="h-9"
+                  />
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="text-destructive mt-1 h-9 w-9 shrink-0"
+                  @click="removeFilterCondition(idx)"
+                >
+                  <X class="size-4" />
+                </Button>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full gap-1"
+                @click="addFilterCondition"
+                :disabled="productStore.currentProducts.length === 0"
+              >
+                <Plus class="size-3" />
+                Añadir filtro
+              </Button>
+
+              <p
+                v-if="productStore.currentProducts.length === 0"
+                class="text-muted-foreground text-xs"
+              >
+                No hay productos disponibles para filtrar.
+              </p>
+            </div>
+          </div>
           <OrderList
-            :orders="orderStore.currentOrders"
+            :orders="filteredOrders"
             @edit="editOrder"
             @delete="deleteOrder"
           />
