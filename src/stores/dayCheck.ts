@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { useDayStore } from './day';
 import type { IDayId } from '@/types';
+import { toLocalISOString } from '@/lib/utils';
 
 export const useDayCheckStore = defineStore('dayCheck', () => {
   const showWarning = ref(false);
@@ -9,7 +10,7 @@ export const useDayCheckStore = defineStore('dayCheck', () => {
   const dayStore = useDayStore();
 
   const checkCurrentDay = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalISOString().split('T')[0];
     const todayId = `day-${today}` as IDayId;
 
     // Verificar si existe el día de hoy
@@ -33,14 +34,14 @@ export const useDayCheckStore = defineStore('dayCheck', () => {
     const today = new Date();
     await dayStore.createDay(today, null);
     await dayStore.setCurrentDay(
-      `day-${today.toISOString().split('T')[0]}` as any
+      `day-${toLocalISOString(today).split('T')[0]}` as IDayId
     );
     showWarning.value = false;
     warningType.value = null;
   };
 
   const resumeCurrentDay = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = toLocalISOString().split('T')[0];
     const todayId = `day-${today}` as IDayId;
     await dayStore.setCurrentDay(todayId);
     showWarning.value = false;

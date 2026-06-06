@@ -50,6 +50,7 @@
   import { useAuthStore } from '@/stores/auth';
   import { useSoundStore } from '@/stores/sound';
   import DownloadDialog from '@/components/DownloadDialog.vue';
+  import { toLocalISOString } from '@/lib/utils';
 
   const pendingBlob = ref<Blob | null>(null);
   const pendingFileName = ref('');
@@ -92,7 +93,7 @@
       new Blob([JSON.stringify(cafeData, null, 2)], {
         type: 'application/json',
       }),
-      `cafeteria-backup-${new Date().toISOString().split('T')[0]}.json`
+      `cafeteria-backup-${toLocalISOString().split('T')[0]}.json`
     );
   };
 

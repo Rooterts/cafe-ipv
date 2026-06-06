@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { IDay, IDayId } from '@/types';
 import { DAY_EXPORT_KEY, exportedDaySchema } from '@/types/schemas';
+import { toLocalISOString } from '@/lib/utils';
 
 export const STORAGE_PREFIX = 'v3:cafeteria-';
 export const DAY_PREFIX = STORAGE_PREFIX + 'day-';
@@ -169,8 +170,8 @@ export const useDayStore = defineStore('days', () => {
     }
 
     const newDay: IDay = {
-      id: ('day-' + date.toISOString().split('T')[0]!) as IDayId,
-      date: date.toISOString().split('T')[0]!,
+      id: ('day-' + toLocalISOString(date).split('T')[0]!) as IDayId,
+      date: toLocalISOString(date).split('T')[0]!,
       products,
       orders: [],
       createdAt: Date.now(),

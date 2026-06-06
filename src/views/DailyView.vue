@@ -41,7 +41,8 @@
   } from '@/components/ui/table';
   import DownloadDialog from '@/components/DownloadDialog.vue';
   import type { IDayId } from '@/types';
-  import * as xlsx from 'xlsx';
+  import { utils as xlsxUtils, write as xlsxWrite } from 'xlsx';
+  import { toLocalISOString } from '@/lib/utils';
 
   const dayStore = useDayStore();
   const tableStore = useTableStore();
@@ -66,7 +67,7 @@
 
   // Dialog state for new day
   const showDateDialog = ref(false);
-  const selectedDate = ref(new Date().toISOString().split('T')[0]);
+  const selectedDate = ref(toLocalISOString().split('T')[0]);
   const dateError = ref('');
 
   // Day selector
@@ -92,7 +93,7 @@
 
   // New day dialog
   const openDateDialog = () => {
-    selectedDate.value = new Date().toISOString().split('T')[0];
+    selectedDate.value = toLocalISOString().split('T')[0];
     dateError.value = '';
     showDateDialog.value = true;
   };
@@ -184,7 +185,7 @@
 
   // Export to Excel $$$$
   const exportToExcel = () => {
-    const book = xlsx.utils.book_new();
+    const book = xlsxUtils.book_new();
 
     const excelData = dayStore.currentDay.products.map((product) => ({
       Producto: product.name,
@@ -211,7 +212,7 @@
       Final: '',
     });
 
-    const sheet = xlsx.utils.json_to_sheet(excelData);
+    const sheet = xlsxUtils.json_to_sheet(excelData);
     sheet['!cols'] = [
       { wch: 30 }, // Producto
       { wch: 10 }, // Inicio
@@ -223,10 +224,10 @@
       { wch: 15 }, // Importe
       { wch: 10 }, // Final
     ];
-    xlsx.utils.book_append_sheet(book, sheet, 'Tabla Diaria');
+    xlsxUtils.book_append_sheet(book, sheet, 'Tabla Diaria');
 
     // Save file
-    const wbout = xlsx.write(book, { bookType: 'xlsx', type: 'array' });
+    const wbout = xlsxWrite(book, { bookType: 'xlsx', type: 'array' });
     pendingFileName.value = `cafeteria-${dayStore.currentDay.date}.xlsx`;
     pendingBlob.value = new Blob([wbout], {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
