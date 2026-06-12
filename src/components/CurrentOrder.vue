@@ -2,6 +2,7 @@
   import { computed } from 'vue';
   import type { ICartItem, IProductId } from '@/types';
   import { Button } from '@/components/ui/button';
+  import { Input } from '@/components/ui/input';
   import { Minus, Edit, Plus, Trash2, ShoppingCartIcon } from 'lucide-vue-next';
   import { cn } from '@/lib/utils';
 
@@ -14,6 +15,7 @@
     (e: 'increment', productId: IProductId): void;
     (e: 'decrement', productId: IProductId): void;
     (e: 'remove', productId: IProductId): void;
+    (e: 'updateQuantity', productId: IProductId, quantity: number): void;
     (e: 'save'): void;
     (e: 'cancel'): void;
   }>();
@@ -26,6 +28,14 @@
     });
     return sum;
   });
+
+  const handleQuantityInput = (productId: IProductId, event: Event) => {
+    const input = event.target as HTMLInputElement;
+    let value = parseFloat(input.value);
+    if (isNaN(value)) value = 0;
+    if (value < 0) value = 0;
+    emit('updateQuantity', productId, value);
+  };
 </script>
 
 <template>
@@ -59,7 +69,9 @@
         class="flex items-center justify-between border-b pb-2"
       >
         <span class="flex-1">{{ item.name }}</span>
-        <div class="flex items-center gap-1">
+
+        <!-- Units: increment/decrement buttons -->
+        <div v-if="item.unitType === 'units'" class="flex items-center gap-1">
           <Button
             variant="outline"
             size="icon"
@@ -86,12 +98,31 @@
             <Trash2 class="size-3" />
           </Button>
         </div>
+
+        <!-- Weighing: manual input + delete -->
+        <div v-else class="flex items-center gap-2">
+          <Input
+            type="number"
+            step="any"
+            :value="item.quantity"
+            @input="handleQuantityInput(item.productId, $event)"
+            class="h-8 w-24 text-center"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            class="text-destructive size-6"
+            @click="emit('remove', item.productId)"
+          >
+            <Trash2 class="size-3" />
+          </Button>
+        </div>
       </div>
     </div>
 
     <div class="flex items-end justify-between border-t pt-2 font-bold">
       <span>Total</span>
-      <span class="text-2xl">{{ total }} CUP</span>
+      <span class="text-2xl">{{ total.toFixed(2) }} CUP</span>
     </div>
     <div class="flex gap-2">
       <Button

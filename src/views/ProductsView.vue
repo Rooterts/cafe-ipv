@@ -49,25 +49,35 @@
     id?: string;
     name: string;
     price: number;
+    unitType: 'units' | 'weighing';
     index: number;
   }>({
     name: '',
     price: 0,
+    unitType: 'units',
     index: -1,
   });
 
   const openNew = () => {
-    editingProduct.value = { name: '', price: 0, index: -1 };
+    editingProduct.value = { name: '', price: 0, unitType: 'units', index: -1 };
     editingProduct.value.index = dayStore.currentDay.products.length;
     showDialog.value = true;
   };
 
-  const openEdit = (product: { id: string; name: string; price: number }) => {
+  const openEdit = (product: {
+    id: string;
+    name: string;
+    price: number;
+    unitType?: 'units' | 'weighing';
+  }) => {
     const index = productStore.currentProducts.findIndex(
       ({ id }) => id === product.id
     );
-    editingProduct.value = { ...product, index };
-    editingProduct.value.index = index;
+    editingProduct.value = {
+      ...product,
+      unitType: product.unitType || 'units',
+      index,
+    };
     showDialog.value = true;
   };
 
@@ -80,6 +90,7 @@
         {
           name: editingProduct.value.name.trim(),
           price: editingProduct.value.price,
+          unitType: editingProduct.value.unitType,
           index: editingProduct.value.index,
         }
       );
@@ -88,6 +99,7 @@
         dayStore.currentDayId,
         editingProduct.value.name,
         editingProduct.value.price,
+        editingProduct.value.unitType,
         editingProduct.value.index
       );
       playAdd();
@@ -190,7 +202,10 @@
               >
                 <GripVertical class="size-4" />
               </TableCell>
-              <TableCell class="font-medium">{{ product.name }}</TableCell>
+              <TableCell class="font-medium">
+                {{ product.name }}
+                {{ product.unitType === 'weighing' ? '(pesaje)' : '' }}
+              </TableCell>
               <TableCell class="font-mono">{{ product.price }}</TableCell>
               <TableCell>
                 <div class="flex gap-2">
@@ -221,7 +236,10 @@
             class="hover:bg-muted/30 cursor-default"
           >
             <TableCell class="w-10"></TableCell>
-            <TableCell class="font-medium">{{ product.name }}</TableCell>
+            <TableCell class="font-medium">
+              {{ product.name }}
+              {{ product.unitType === 'weighing' ? '(pesaje)' : '' }}
+            </TableCell>
             <TableCell class="font-mono">{{ product.price }}</TableCell>
             <TableCell>
               <div class="flex gap-2">
@@ -283,7 +301,29 @@
             <label class="text-sm font-medium">Precio (CUP)</label>
             <Input v-model="editingProduct.price" type="number" min="0" />
           </div>
-
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Tipo de unidad</label>
+            <Select v-model="editingProduct.unitType">
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="units">
+                  Unidades (piezas enteras)
+                </SelectItem>
+                <SelectItem value="weighing">
+                  Pesaje (kg, litros, etc.)
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p
+              v-if="editingProduct.unitType === 'weighing'"
+              class="text-muted-foreground text-xs"
+            >
+              Los productos de pesaje permiten cantidades decimales y se editan
+              manualmente en el carrito.
+            </p>
+          </div>
           <div class="flex items-center">
             <label class="text-sm font-medium">Insertar después de:</label>
 
@@ -311,7 +351,7 @@
           <Button variant="outline" @click="showDialog = false">
             Cancelar
           </Button>
-          <Button @click="save">Guardar</Button>
+          <Button @click="save"> Guardar </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

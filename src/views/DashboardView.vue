@@ -118,6 +118,7 @@
         quantity: 1,
         name: product.name,
         price: product.price,
+        unitType: product.unitType || 'units',
       });
       playAdd();
     }
@@ -146,6 +147,17 @@
     playTrash();
   };
 
+  const updateQuantityInCurrentOrder = (
+    productId: string,
+    quantity: number
+  ) => {
+    const item = currentOrderItems.value.find((i) => i.productId === productId);
+    if (item) {
+      item.quantity = quantity;
+      playAdd();
+    }
+  };
+
   const clearCurrentOrder = () => {
     playDecrement();
     currentOrderItems.value = [];
@@ -157,12 +169,13 @@
     if (!order) return;
     const productsMap = await productStore.getProductMap(dayStore.currentDayId);
     currentOrderItems.value = order.items.map(({ productId, quantity }) => {
-      const { name, price } = productsMap.get(productId)!;
+      const { name, price, unitType } = productsMap.get(productId)!;
       return {
         productId,
         quantity,
         name,
         price,
+        unitType: unitType || 'units',
       };
     });
     editingOrderId.value = orderId;
@@ -328,6 +341,7 @@
             @increment="addToCurrentOrder"
             @decrement="removeFromCurrentOrder"
             @remove="removeItemCompletely"
+            @update-quantity="updateQuantityInCurrentOrder"
             @save="saveOrder"
             @cancel="clearCurrentOrder"
           />
@@ -388,6 +402,7 @@
           @increment="addToCurrentOrder"
           @decrement="removeFromCurrentOrder"
           @remove="removeItemCompletely"
+          @update-quantity="updateQuantityInCurrentOrder"
           @save="saveOrder"
           @cancel="clearCurrentOrder"
         />

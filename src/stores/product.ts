@@ -17,6 +17,7 @@ export const useProductStore = defineStore('products', () => {
     dayId: IDayId,
     name: string,
     price: number,
+    unitType: 'units' | 'weighing' = 'units',
     index = 0
   ) => {
     const day = await dayStore.getDay(dayId);
@@ -25,6 +26,7 @@ export const useProductStore = defineStore('products', () => {
       id: crypto.randomUUID() as IProductId,
       name: name,
       price: price,
+      unitType: unitType,
       daily: {
         inicio: 0,
         entrada: 0,
@@ -44,7 +46,9 @@ export const useProductStore = defineStore('products', () => {
   const updateProduct = async (
     dayId: IDayId,
     productId: string,
-    updates: Partial<Pick<IProduct, 'name' | 'price'> & { index: number }>
+    updates: Partial<
+      Pick<IProduct, 'name' | 'price' | 'unitType'> & { index: number }
+    >
   ) => {
     const day = await dayStore.getDay(dayId);
 
@@ -54,6 +58,9 @@ export const useProductStore = defineStore('products', () => {
 
     if (updates.name) {
       product.name = updates.name;
+    }
+    if (updates.unitType) {
+      product.unitType = updates.unitType;
     }
     if (updates.price && updates.price !== product.price) {
       const hasOrders = day.orders.some((order) =>

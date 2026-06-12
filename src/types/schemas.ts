@@ -19,6 +19,7 @@ export const productSchema = z.object({
   id: productIdSchema,
   name: z.string(),
   price: z.number(),
+  unitType: z.enum(['units', 'weighing']).default('units'),
   daily: productDailyDataSchema,
 });
 
