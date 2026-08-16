@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { useDayStore } from './day';
 import type { IDayId, IProduct, IProductId } from '@/types';
 import { computed } from 'vue';
+import { createId } from '@/lib/id';
 
 export const useProductStore = defineStore('products', () => {
   const dayStore = useDayStore();
@@ -23,7 +24,7 @@ export const useProductStore = defineStore('products', () => {
     const day = await dayStore.getDay(dayId);
 
     const newProduct: IProduct = {
-      id: crypto.randomUUID() as IProductId,
+      id: createId() as IProductId,
       name: name,
       price: price,
       unitType: unitType,

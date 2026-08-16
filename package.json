@@ -18,9 +18,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rodnye/cafe-ipv"
+    "url": "https://github.com/Rooterts/cafe-ipv"
   },
-  "homepage": "https://rodnye.github.io/cafe-ipv",
+  "homepage": "https://Rooterts.github.io/cafe-ipv",
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/vue-table": "^8.21.3",

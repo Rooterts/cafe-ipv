@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { useDayStore } from './day';
 import type { ICartItem, IDayId, IOrder, IOrderId } from '@/types';
 import { computed } from 'vue';
+import { createId } from '@/lib/id';
 
 export const useOrderStore = defineStore('orders', () => {
   const dayStore = useDayStore();
@@ -19,7 +20,7 @@ export const useOrderStore = defineStore('orders', () => {
     const day = await dayStore.getDay(dayId);
 
     const newOrder: IOrder = {
-      id: crypto.randomUUID() as IOrderId,
+      id: createId() as IOrderId,
       items,
       createdAt: Date.now(),
       updatedAt: Date.now(),

@@ -157,6 +157,7 @@ export const useDayStore = defineStore('days', () => {
         id: p.id,
         name: p.name,
         price: p.price,
+        unitType: p.unitType || 'units',
         daily: {
           inicio: p.daily.final,
           entrada: 0,

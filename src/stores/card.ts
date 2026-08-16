@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { ICard } from '@/types';
+import { createId } from '@/lib/id';
 
 const STORAGE_KEY = 'v3:cafeteria-cards';
 
@@ -20,7 +21,7 @@ export const useCardStore = defineStore('cards', () => {
 
   const addCard = async (cardData: Omit<ICard, 'id' | 'createdAt'>) => {
     const newCard: ICard = {
-      id: crypto.randomUUID(),
+      id: createId(),
       ...cardData,
       createdAt: Date.now(),
     };

@@ -17,7 +17,7 @@ Aplicación de gestión para cafetería desarrollada con **Vue 3**, **Vite**, **
 
 Puedes probar la aplicación directamente en tu navegador:
 
-[**https://rodnye.github.io/cafe-ipv/**](https://rodnye.github.io/cafe-ipv/)
+[**https://Rooterts.github.io/cafe-ipv/**](https://Rooterts.github.io/cafe-ipv/)
 
 ## Características
 
